@@ -18,49 +18,51 @@ A multi-agent RAG application that evaluates user actions against enterprise pol
 
 ```mermaid
 flowchart TD
-    Q[User question] --> SUP[Supervisor Agent<br/>Gemini routing LLM]
+    Q[User question] --> SUP[Supervisor Agent<br/>understands the request and selects domains]
 
-    subgraph DOMAIN[Domain agents selected by the Supervisor]
+    subgraph DOMAIN[Domain analysis selected by the Supervisor]
         direction TB
 
         subgraph HRLANE[HR domain]
-            HR[HR Agent] --> HRRAG[HR FAISS retrieval<br/>domain = hr]
-            HRRAG --> HRLLM[HR Gemini LLM]
-            HRLLM --> HRF[HR finding and evidence]
+            HR[HR Agent] --> HRWORK[LLM analysis + HR evidence retrieval]
+            HRWORK --> HRF[HR finding]
         end
 
         subgraph FINLANE[Finance domain]
-            FIN[Finance Agent] --> FINRAG[Finance FAISS retrieval<br/>domain = finance]
-            FINRAG --> FINLLM[Finance Gemini LLM]
-            FINLLM --> FINF[Finance finding and evidence]
+            FIN[Finance Agent] --> FINWORK[LLM analysis + Finance evidence retrieval]
+            FINWORK --> FINF[Finance finding]
         end
 
         subgraph SECLANE[Security domain]
-            SEC[Security Agent] --> SECRAG[Security FAISS retrieval<br/>domain = security]
-            SECRAG --> SECLLM[Security Gemini LLM]
-            SECLLM --> SECF[Security finding and evidence]
+            SEC[Security Agent] --> SECWORK[LLM analysis + Security evidence retrieval]
+            SECWORK --> SECF[Security finding]
         end
 
         subgraph ITLANE[IT domain]
-            IT[IT Agent] --> ITRAG[IT FAISS retrieval<br/>domain = it]
-            ITRAG --> ITLLM[IT Gemini LLM]
-            ITLLM --> ITF[IT finding and evidence]
+            IT[IT Agent] --> ITWORK[LLM analysis + IT evidence retrieval]
+            ITWORK --> ITF[IT finding]
         end
     end
 
-    SUP -->|routes to relevant domains| HR
-    SUP -->|routes to relevant domains| FIN
-    SUP -->|routes to relevant domains| SEC
-    SUP -->|routes to relevant domains| IT
+    SUP -->|sends only relevant questions| HR
+    SUP -->|sends only relevant questions| FIN
+    SUP -->|sends only relevant questions| SEC
+    SUP -->|sends only relevant questions| IT
 
-    HRF --> MERGE[Merge findings and evidence]
+    HRF --> MERGE[Merge findings and policy evidence]
     FINF --> MERGE
     SECF --> MERGE
     ITF --> MERGE
 
-    MERGE --> COMP[Compliance Evaluation Agent<br/>Gemini structured decision]
-    COMP --> CITE[Citation Formatter Agent]
-    CITE --> PDF[PDF highlighting tool<br/>exact evidence matching]
+    MERGE --> COMP[Compliance Evaluation Agent<br/>makes the risk and policy decision]
+
+    subgraph CITATION[Citation Formatter Agent]
+        CITE[Attach document, page, and section citations]
+        PDF[PDF highlighting tool<br/>marks the exact evidence text]
+        CITE --> PDF
+    end
+
+    COMP --> CITE
     PDF --> RESP[Response Formatter]
     RESP --> OUT[Validated JSON and Streamlit UI]
 ```
