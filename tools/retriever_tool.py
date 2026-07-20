@@ -9,6 +9,8 @@ from sentence_transformers import SentenceTransformer
 
 
 VECTOR_STORE_DIR = Path("data/vector_store")
+MAX_RESULTS = 2
+MIN_SEMANTIC_SCORE = 0.75
 
 
 @lru_cache
@@ -29,11 +31,14 @@ def search_policies(query: str, domains: list[str]) -> str:
     query_vector = load_embedding_model().encode([query], convert_to_numpy=True).astype("float32")
     faiss.normalize_L2(query_vector)
 
-    # FAISS returns chunks ordered by semantic similarity to the user question.
+    # FAISS returns chunks ordered by cosine similarity to the user question.
+    # Only highly similar evidence is passed to an agent.
     scores, indices = index.search(query_vector, index.ntotal)
     evidence = []
     for score, chunk_id in zip(scores[0], indices[0]):
         if chunk_id < 0:
+            continue
+        if score < MIN_SEMANTIC_SCORE:
             continue
         chunk = chunks[chunk_id]
         if not set(chunk.get("domains", [])).intersection(domains):
@@ -46,6 +51,6 @@ def search_policies(query: str, domains: list[str]) -> str:
             "text": chunk["text"],
             "semantic_score": round(float(score), 3),
         })
-        if len(evidence) == 4:
+        if len(evidence) == MAX_RESULTS:
             break
     return json.dumps(evidence, indent=2)

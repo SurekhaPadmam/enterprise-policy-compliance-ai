@@ -32,6 +32,10 @@ st.markdown(
         .status-value { margin: 0; font-size: 1.7rem; font-weight: 750; }
         .status-meta { display: flex; gap: .65rem; flex-wrap: wrap; margin-top: 1rem; }
         .pill { padding: .3rem .65rem; border-radius: 999px; background: #ffffffa8; font-size: .87rem; font-weight: 600; }
+        .risk-low { background: #dff5e7; color: #145a32; }
+        .risk-medium { background: #fff1c7; color: #79550a; }
+        .risk-high { background: #ffdede; color: #9e2424; }
+        .risk-unknown { background: #e5e7eb; color: #334155; }
         .allowed { background: #e9f8ef; border-color: #6bc98b; color: #145a32; }
         .conditional, .approval { background: #fff7df; border-color: #e8bf50; color: #79550a; }
         .not-compliant { background: #fff0f0; border-color: #df7474; color: #9e2424; }
@@ -112,6 +116,7 @@ def show_compliance_summary(result: FinalResponse) -> None:
     """Render the most important decision as a prominent, scannable card."""
     decision = result.compliance_decision
     status_class = STATUS_CLASSES[decision.status]
+    risk_class = f"risk-{decision.risk.lower()}"
     approvals = ", ".join(decision.approvals_required) or "No approval required"
     domains = ", ".join(finding.domain.upper() for finding in result.findings) or "General"
     st.markdown(
@@ -120,7 +125,7 @@ def show_compliance_summary(result: FinalResponse) -> None:
             <p class="status-label">Compliance decision</p>
             <p class="status-value">{html.escape(decision.status)}</p>
             <div class="status-meta">
-                <span class="pill">Risk: {html.escape(decision.risk)}</span>
+                <span class="pill {risk_class}">Risk: {html.escape(decision.risk)}</span>
                 <span class="pill">Domains: {html.escape(domains)}</span>
                 <span class="pill">{html.escape(approvals)}</span>
             </div>
@@ -193,7 +198,7 @@ def main() -> None:
     with st.form("policy_question"):
         question = st.text_area(
             "Your question",
-            placeholder="Example: Can I paste customer data into a public AI tool?",
+            placeholder="Example: Can I paste customer data into a public AI tool? \n I lost my company laptop at the airport. What should I do?",
             height=100,
         )
         submitted = st.form_submit_button("Check compliance", type="primary")
