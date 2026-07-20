@@ -1,0 +1,12 @@
+{
+  "metadata_schema_version": 2,
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "documents": {
+    "AI_Usage_Policy.pdf": "911b304178efc73633defd0ed8bc43d06c02cc132e3f9c76dae5370cb4857595",
+    "Expense_Policy.pdf": "28c523cb183399a902d90590eb3b5f4dc44104021280caebc859c92733eedec3",
+    "HR_Policy.pdf": "4c6b5815102b84778fd2fd352fc1c4cddbf7cc9f988f1bffe5dbdd8fb7b4846b",
+    "Information_Security_Policy.pdf": "a83e60f60ce555facf5afedce49aa223bfbdd01782d571bd402f552a43680bce",
+    "Leave_Policy.pdf": "b8454fedbf3c4d7e93e1d61df5fd749f9cb3f0bb2423d68c3be2d9e84a42dbe8"
+  },
+  "chunks": 150
+}
