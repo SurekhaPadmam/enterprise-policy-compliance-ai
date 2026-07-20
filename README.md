@@ -17,16 +17,34 @@ A multi-agent RAG application that evaluates user actions against enterprise pol
 ## Architecture
 
 ```mermaid
-flowchart LR
-    Q[User question] --> S[Supervisor / Router]
-    S -->|selected domains| D[Security, HR, Finance, IT agents]
-    D --> R[FAISS semantic retrieval tool]
-    R --> D
-    D --> M[Merge evidence]
-    M --> C[Compliance Evaluation Agent]
-    C --> F[Citation Formatter Agent]
-    F --> H[PDF evidence highlighter]
-    H --> O[Structured JSON and Streamlit answer]
+flowchart TD
+    Q[User question] --> S[Supervisor / Router Agent]
+
+    S -->|Security relevant| SEC[Security Agent]
+    S -->|HR relevant| HR[HR Agent]
+    S -->|Finance relevant| FIN[Finance Agent]
+    S -->|IT relevant| IT[IT Agent]
+
+    SEC --> RET[FAISS Semantic Retrieval Tool]
+    HR --> RET
+    FIN --> RET
+    IT --> RET
+
+    RET --> SEC
+    RET --> HR
+    RET --> FIN
+    RET --> IT
+
+    SEC --> MERGE[Evidence Merge Node]
+    HR --> MERGE
+    FIN --> MERGE
+    IT --> MERGE
+
+    MERGE --> COMP[Compliance Evaluation Agent]
+    COMP --> CITE[Citation Formatter Agent]
+    CITE --> PDF[PDF Evidence Highlighting Tool]
+    PDF --> RESP[Response Formatter Node]
+    RESP --> OUT[Validated JSON and Streamlit UI]
 ```
 
 The LangGraph workflow is defined directly in `main.py`:
@@ -252,4 +270,3 @@ For production, replace the local FAISS files with a persistent shared vector da
 - Can I work from home using my personal laptop?
 - How many annual-leave days can I carry into next year?
 - Do I need a receipt for a EUR 40 business expense?
-
