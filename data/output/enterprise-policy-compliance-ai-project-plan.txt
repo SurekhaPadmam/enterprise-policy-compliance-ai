@@ -1,0 +1,813 @@
+ENTERPRISE POLICY COMPLIANCE AI
+Complete Architecture and Project Plan
+========================================
+
+
+1. HIGH-LEVEL GOAL
+------------------
+
+Build an enterprise AI assistant that helps employees determine whether a
+planned action complies with company policies.
+
+Unlike a traditional RAG chatbot, the system:
+
+- Understands user intent.
+- Routes the request to the appropriate domain expert (agent).
+- Retrieves evidence from the correct policy documents.
+- Evaluates compliance.
+- Explains the reasoning.
+- Cites supporting policy sections.
+- Maintains conversational context.
+
+The project should feel like an Enterprise Compliance Decision Assistant,
+not simply a PDF chatbot.
+
+
+2. THE BUSINESS PROBLEM
+-----------------------
+
+Large companies have hundreds of policy documents, including:
+
+- HR Policy
+- Leave Policy
+- Travel Policy
+- Information Security Policy
+- Data Classification Policy
+- GDPR Guidelines
+- AI Usage Policy
+- Vendor Policy
+- Procurement Policy
+- Password Policy
+- Bring Your Own Device (BYOD) Policy
+- Remote Work Policy
+- Expense Policy
+- Incident Response Policy
+- Code of Conduct
+
+Employees rarely read these documents in full. They ask managers or
+colleagues questions such as:
+
+- Can I use ChatGPT with customer data?
+- I lost my office laptop. What should I do?
+- Can I work from Spain for three months?
+- Can I expense a ride home after 10 PM?
+- Can I copy customer data to a USB drive and work from home?
+
+The application becomes the first place employees go to get a policy-backed
+answer and a clear compliance decision.
+
+
+3. WHAT “COMPLIANCE” MEANS IN THIS APPLICATION
+-----------------------------------------------
+
+The system does more than retrieve and summarize policy text. It evaluates
+whether the action described by the user is allowed under the available
+company policies.
+
+Example:
+
+User action:
+"I want to email our production customer database to my Gmail."
+
+Expected decision:
+
+Compliance Result
+Status: Not Compliant
+Reason: Customer data is classified as Restricted Data.
+Policy violated: Information Security Policy, Section 4.2
+Risk: High
+Recommended action: Use the approved secure file-transfer solution.
+Source: Information Security Policy
+
+Another example:
+
+User action:
+"Can I install ChatGPT Desktop on my office laptop?"
+
+Expected decision:
+
+Status: Needs Approval
+Reason: Only approved AI software may be installed.
+Approval required: IT Security Team
+Policy: AI Usage Policy, Section 7.2
+
+Another example:
+
+User action:
+"Can I expense alcohol during a client dinner?"
+
+Expected decision:
+
+Status: Allowed (with conditions)
+Conditions: Maximum €50 per person; receipt mandatory; manager approval
+required.
+Source: Expense Policy
+
+
+4. POLICY DOCUMENT INPUTS
+-------------------------
+
+The RAG system will index policy documents such as:
+
+data/
+    HR_Policy.pdf
+    Leave_Policy.pdf
+    Information_Security.pdf
+    Data_Classification_Policy.pdf
+    Travel_Policy.pdf
+    Expense_Policy.pdf
+    AI_Usage_Guidelines.pdf
+    GDPR_Policy.pdf
+    Vendor_Management.pdf
+    Code_of_Conduct.pdf
+    Remote_Work_Policy.pdf
+    Incident_Response_Policy.pdf
+
+Documents are loaded, cleaned, split into chunks, embedded, and stored in a
+vector database. Metadata should preserve the document name, domain, page
+number, section (when available), policy version, and chunk identifier.
+
+
+5. HIGH-LEVEL ARCHITECTURE
+--------------------------
+
+                                  User
+                                    |
+                                    v
+                            FastAPI Backend
+                                    |
+                                    v
+                         LangGraph State Graph
+                                    |
+                                    v
+                       Supervisor / Router Agent
+                                    |
+            +-----------------------+-----------------------+
+            |                       |                       |
+            v                       v                       v
+        HR Agent              Security Agent          Finance Agent
+            |                       |                       |
+            +-----------------------+-----------------------+
+                                    |
+                                    v
+                                 IT Agent
+                                    |
+                                    v
+                            Retrieval (RAG Layer)
+                                    |
+                                    v
+                    Hybrid Search (Vector + Keyword)
+                                    |
+                                    v
+                             Policy Documents
+                                    |
+                                    v
+                       Compliance Evaluation Agent
+                                    |
+                                    v
+                         Citation Formatter Agent
+                                    |
+                                    v
+                          Final Response to User
+
+
+6. CORE USER FLOW
+-----------------
+
+1. A user submits a question or describes a planned action through the UI.
+
+2. FastAPI receives and validates the request.
+
+3. The LangGraph workflow starts with a shared state object.
+
+4. The Supervisor Agent identifies:
+   - intent;
+   - request type (question, action evaluation, incident, approval request);
+   - relevant departments/domains;
+   - whether retrieval is required.
+
+5. The graph routes the request to one or more domain agents:
+   - HR;
+   - Security;
+   - Finance;
+   - IT.
+
+6. Each selected domain agent calls a reusable retrieval tool with the
+   relevant policy collections.
+
+7. The system combines all retrieved evidence.
+
+8. The Compliance Evaluation Agent produces a structured decision:
+   - status;
+   - reasoning;
+   - risk;
+   - policies involved or violated;
+   - recommended next action;
+   - approvals required, if any.
+
+9. The Citation Formatter Agent attaches the policy name, page number, and
+   section for every important claim.
+
+10. A response formatter returns a readable, structured answer to the user.
+
+
+7. AGENTS AND RESPONSIBILITIES
+------------------------------
+
+7.1 Supervisor / Router Agent
+
+Input:
+    User question or action description.
+
+Responsibilities:
+    - Identify intent.
+    - Identify one or more relevant domains.
+    - Select the domain agents to run.
+    - Decide whether the request is a compliance decision, a policy question,
+      an incident, or an approval request.
+
+Example output:
+
+{
+  "intent": "security_and_ai_usage",
+  "request_type": "compliance_check",
+  "needs_rag": true,
+  "agents": ["security", "it"]
+}
+
+
+7.2 Security Agent
+
+Focus areas:
+    - Information security
+    - Data classification
+    - Customer and restricted data
+    - Public AI tools
+    - Removable media
+    - Encryption, VPN, and data transfer
+
+Example question:
+    "Can I use ChatGPT with customer data?"
+
+Relevant collections:
+    - Information Security Policy
+    - AI Usage Policy
+    - Data Classification Policy
+
+
+7.3 HR Agent
+
+Focus areas:
+    - Leave and benefits
+    - Remote work
+    - Employee conduct
+    - Location and work-from-abroad rules
+    - Notice period and leave encashment
+
+
+7.4 Finance Agent
+
+Focus areas:
+    - Travel and expenses
+    - Client entertainment
+    - Reimbursements
+    - Spending limits and receipts
+    - Approval requirements
+
+
+7.5 IT Agent
+
+Focus areas:
+    - Managed devices
+    - Approved software
+    - Laptop loss or theft
+    - Passwords, access, and service tickets
+    - Device setup and support procedures
+
+
+7.6 Compliance Evaluation Agent
+
+Input:
+    - User question or planned action
+    - Combined retrieved evidence from all selected domain agents
+
+Output:
+
+{
+  "status": "Not Compliant",
+  "reason": "Customer data cannot be entered into public AI tools.",
+  "risk": "High",
+  "policy_findings": ["Information Security Policy", "AI Usage Policy"],
+  "recommendation": "Use the approved enterprise AI platform.",
+  "approval_required": false
+}
+
+Suggested status values:
+    - Allowed
+    - Allowed with Conditions
+    - Needs Approval
+    - Not Compliant
+    - Insufficient Policy Evidence
+
+
+7.7 Citation Formatter Agent
+
+Responsibilities:
+    - Turn retrieved metadata into user-friendly citations.
+    - Include document title, page number, section, and a short supporting
+      excerpt when useful.
+    - Avoid unsupported claims.
+
+
+7.8 Response Formatter
+
+Responsibilities:
+    - Present the final result in a consistent, readable format.
+
+Suggested response structure:
+
+Compliance Status
+    Not Compliant
+
+Reason
+    Customer confidential information cannot be pasted into public AI tools.
+
+Risk
+    High
+
+Recommended Action
+    Use the approved enterprise AI platform or secure internal workflow.
+
+Evidence
+    - AI Usage Policy, Section 2.1, page 4
+    - Information Security Policy, Section 5.3, page 11
+
+
+8. CROSS-DOCUMENT REASONING AND POLICY CONFLICTS
+-------------------------------------------------
+
+The system should support multi-document reasoning rather than only returning
+the top matching text chunk.
+
+Example:
+
+User action:
+    "I want to copy customer data to a USB drive and work from home."
+
+The system identifies:
+    - USB device
+    - customer data
+    - remote work
+
+It retrieves and combines:
+    - Information Security Policy
+    - Data Classification Policy
+    - Remote Work Policy
+
+Expected decision:
+
+Status: Not Compliant
+Policies involved: Information Security; Data Classification; Remote Work
+Reason: Restricted customer data cannot be copied to removable media.
+Recommendation: Use a company-managed laptop, corporate VPN, and approved
+encrypted storage.
+
+Policy Conflict Resolver enhancement:
+
+If one policy says remote work is allowed while another says customer data
+cannot leave company-managed devices, the system should explain both rules:
+
+    You may work remotely, but only on a company-managed device connected
+    through the corporate VPN. Copying customer data to a personal device is
+    not permitted.
+
+
+9. TECHNOLOGY STACK
+-------------------
+
+Backend
+    - Python 3.12+
+    - FastAPI
+    - Uvicorn
+
+LLM Application Framework
+    - LangGraph
+    - LangChain
+
+LLM Provider
+    - Azure OpenAI (primary option)
+    - OpenAI (easy alternative)
+
+Embeddings
+    - OpenAI Embeddings, or
+    - BAAI/bge-small-en-v1.5 from Hugging Face
+
+Vector Database
+    - Initial implementation: FAISS
+    - Upgrade option: ChromaDB
+    - Production option: Azure AI Search or Pinecone
+
+Document Processing
+    - PyMuPDF
+    - Unstructured
+    - RecursiveCharacterTextSplitter
+
+Frontend
+    - Streamlit initially
+    - React as a later upgrade
+
+Database
+    - SQLite initially
+    - PostgreSQL later
+
+Observability
+    - LangSmith
+
+Deployment and Delivery
+    - Docker
+    - GitHub Actions
+    - Azure App Service (or Render)
+
+Data Validation and Structured Outputs
+    - Pydantic
+
+
+10. RECOMMENDED FOLDER STRUCTURE
+--------------------------------
+
+enterprise-policy-ai/
+|
+|-- app/
+|   |
+|   |-- agents/
+|   |   |-- supervisor.py
+|   |   |-- hr_agent.py
+|   |   |-- security_agent.py
+|   |   |-- finance_agent.py
+|   |   |-- it_agent.py
+|   |   |-- compliance_agent.py
+|   |   `-- citation_agent.py
+|   |
+|   |-- graph/
+|   |   |-- graph_builder.py
+|   |   `-- state.py
+|   |
+|   |-- rag/
+|   |   |-- loader.py
+|   |   |-- splitter.py
+|   |   |-- embeddings.py
+|   |   |-- vector_store.py
+|   |   `-- retriever.py
+|   |
+|   |-- prompts/
+|   |   |-- supervisor.txt
+|   |   |-- hr.txt
+|   |   |-- security.txt
+|   |   |-- finance.txt
+|   |   |-- it.txt
+|   |   `-- compliance.txt
+|   |
+|   |-- tools/
+|   |   |-- search_tool.py
+|   |   `-- citation_tool.py
+|   |
+|   |-- api/
+|   |   `-- routes.py
+|   |
+|   |-- models/
+|   |   |-- request.py
+|   |   `-- response.py
+|   |
+|   |-- utils/
+|   |
+|   |-- config.py
+|   `-- main.py
+|
+|-- data/
+|   |-- HR_Policy.pdf
+|   |-- Information_Security.pdf
+|   |-- Travel_Policy.pdf
+|   |-- Expense_Policy.pdf
+|   `-- AI_Usage_Guidelines.pdf
+|
+|-- vector_store/
+|
+|-- notebooks/
+|
+|-- tests/
+|
+|-- README.md
+|-- requirements.txt
+|-- Dockerfile
+|-- .env
+`-- .gitignore
+
+
+11. MAIN COMPONENTS
+-------------------
+
+11.1 Document Ingestion Pipeline
+
+Responsibilities:
+    - Load PDFs and other supported documents.
+    - Extract and clean text.
+    - Split text into chunks.
+    - Create embeddings.
+    - Store vectors with metadata.
+
+Input:
+    Policy documents.
+
+Output:
+    Searchable vector database.
+
+This pipeline runs whenever policy documents are added or changed.
+
+
+11.2 Reusable Retrieval Tool
+
+Instead of hard-coding a separate RAG retriever for every domain agent, build
+one reusable retrieval tool that accepts selected document collections.
+
+Example conceptual input:
+
+    search_policies(
+        query="Can I use ChatGPT with customer data?",
+        collections=["information_security", "ai_usage", "data_classification"]
+    )
+
+This keeps the design cleaner, more extensible, and closer to a production
+enterprise architecture.
+
+
+11.3 Hybrid Search
+
+Use both:
+    - vector / semantic search, and
+    - keyword / BM25 search.
+
+Hybrid retrieval improves recall for exact policy language, section numbers,
+and terms such as "restricted data", "USB", "manager approval", or
+"public AI tool".
+
+
+11.4 API Layer
+
+FastAPI receives user requests, invokes the graph, and returns a structured
+response. Example endpoints for later implementation:
+
+    POST /api/v1/assess
+    POST /api/v1/ingest
+    GET  /api/v1/health
+
+
+11.5 UI Layer
+
+The initial Streamlit interface should let a user:
+    - enter a question or action;
+    - submit it for assessment;
+    - see compliance status, reasoning, risk, recommendations, and citations;
+    - optionally provide feedback (thumbs up/down).
+
+
+12. LANGGRAPH STATE
+-------------------
+
+Suggested shared state:
+
+class AgentState(TypedDict):
+    question: str
+    intent: str
+    request_type: str
+    selected_agents: list[str]
+    retrieved_docs: list
+    domain_findings: list
+    compliance_result: dict
+    citations: list
+    final_answer: str
+
+Purpose of each field:
+
+    question
+        Original user question or action description.
+
+    intent
+        The classified policy domain or subject.
+
+    request_type
+        Policy question, compliance check, incident, or approval request.
+
+    selected_agents
+        Domain agents selected by the supervisor.
+
+    retrieved_docs
+        Evidence returned from the RAG layer.
+
+    domain_findings
+        Agent-specific interpretations of retrieved evidence.
+
+    compliance_result
+        Structured output from the Compliance Evaluation Agent.
+
+    citations
+        Formatted source references.
+
+    final_answer
+        User-facing final result.
+
+
+13. LANGGRAPH FLOW
+------------------
+
+Simple single-domain flow:
+
+START
+  |
+  v
+Supervisor
+  |
+  v
+Intent Detection and Agent Selection
+  |
+  v
+Security Agent (example)
+  |
+  v
+Retrieve Security Policy Documents
+  |
+  v
+Compliance Evaluation
+  |
+  v
+Citation Formatting
+  |
+  v
+Response Formatting
+  |
+  v
+END
+
+Multi-domain flow:
+
+User
+  |
+  v
+Supervisor
+  |
+  +--> Security Agent --> Retrieve Security / AI / Data Policies --+
+  |                                                                |
+  +--> HR Agent -------> Retrieve Remote Work / HR Policies ------+--> Combine
+                                                                     Evidence
+                                                                        |
+                                                                        v
+                                                            Compliance Agent
+                                                                        |
+                                                                        v
+                                                            Citation Agent
+                                                                        |
+                                                                        v
+                                                                     END
+
+Example routing:
+
+Question:
+    "Can I work from Spain for three months with customer data?"
+
+Potential selected agents:
+    - HR Agent
+    - Security Agent
+
+Potential policy collections:
+    - Remote Work Policy
+    - Travel Policy
+    - Information Security Policy
+    - Data Classification Policy
+
+
+14. REQUIREMENTS / INITIAL DEPENDENCIES
+----------------------------------------
+
+The initial requirements.txt will likely include:
+
+fastapi
+uvicorn[standard]
+langchain
+langgraph
+langchain-openai
+langchain-community
+pydantic
+python-dotenv
+pymupdf
+faiss-cpu
+sentence-transformers
+streamlit
+pytest
+httpx
+
+Optional additions as the project grows:
+
+chromadb
+rank-bm25
+langsmith
+sqlalchemy
+psycopg[binary]
+unstructured
+
+
+15. DEVELOPMENT ROADMAP
+-----------------------
+
+Phase 1: Project Setup
+    - Create the repository and folder structure.
+    - Set up Python environment and requirements.txt.
+    - Add .env.example, .gitignore, FastAPI health endpoint, and README.
+    - Create configuration and Pydantic request/response models.
+
+Phase 2: Document Ingestion
+    - Prepare a small, realistic sample policy dataset.
+    - Load PDFs.
+    - Chunk documents and preserve metadata.
+    - Generate embeddings.
+    - Store vectors in FAISS.
+
+Phase 3: RAG Retriever
+    - Build the reusable collection-aware retrieval tool.
+    - Test retrieval quality with representative employee questions.
+    - Add basic source metadata to results.
+
+Phase 4: Supervisor Agent
+    - Implement intent classification and domain routing.
+    - Return validated structured routing output.
+
+Phase 5: Domain Agents
+    - Implement Security, HR, Finance, and IT agents.
+    - Give each agent a focused prompt and policy collections.
+
+Phase 6: LangGraph Workflow
+    - Define AgentState.
+    - Connect routing, domain agents, retrieval, aggregation, and final steps.
+    - Support both single-domain and multi-domain requests.
+
+Phase 7: Compliance Evaluation
+    - Build structured compliance decisions.
+    - Add status, risk, reasoning, conditions, approvals, and recommendations.
+
+Phase 8: Citations and Structured Responses
+    - Format citations with policy title, page, and section.
+    - Return a stable API response schema.
+
+Phase 9: User Interface
+    - Build a simple Streamlit user experience.
+    - Display answer, status, evidence, and sources clearly.
+
+Phase 10: Production Polish
+    - Add observability with LangSmith.
+    - Add unit and integration tests.
+    - Dockerize the application.
+    - Add GitHub Actions CI.
+    - Deploy to Azure App Service or Render.
+    - Add architecture diagrams, screenshots, API documentation, and a
+      polished GitHub README.
+
+
+16. FUTURE ENHANCEMENTS
+-----------------------
+
+- Conversation memory for follow-up questions.
+- Role-based access control for Employee, Manager, HR, Security, and Admin.
+- Hybrid retrieval using vector search plus BM25 keyword search.
+- Structured outputs with Pydantic models.
+- LangSmith tracing, evaluation, and observability.
+- Feedback loop with thumbs up/down and feedback notes.
+- Policy versioning, including comparisons between policy versions.
+- Policy Conflict Resolver for cross-policy reasoning.
+- Audit log for compliance decisions and evidence used.
+- Support for additional sources such as SharePoint, Confluence, Word, Excel,
+  and internal knowledge bases.
+- Production retrieval using Azure AI Search or Pinecone.
+- Authentication and user identity context.
+- Evaluation metrics for retrieval relevance and answer faithfulness.
+- Dockerized deployment and CI/CD through GitHub Actions.
+
+
+17. WHY THIS PROJECT IS STRONG FOR A GENAI / AI AGENT PORTFOLIO
+---------------------------------------------------------------
+
+This single project demonstrates:
+
+- RAG with policy-specific knowledge bases.
+- Multi-agent orchestration using LangGraph.
+- LangChain integration.
+- Intelligent routing to specialized domain agents.
+- Tool calling through reusable retrieval tools.
+- Multi-document and cross-policy reasoning.
+- Structured compliance decisions instead of generic chat responses.
+- Grounded answers with citations.
+- FastAPI backend development.
+- Vector databases and hybrid search.
+- Pydantic validation and structured LLM outputs.
+- Observability, testing, Docker, CI/CD, and deployment practices.
+
+The goal is to present a realistic enterprise GenAI system that can be clearly
+explained in interviews: an AI assistant that turns company policies into
+evidence-backed compliance decisions.
