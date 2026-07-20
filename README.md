@@ -18,32 +18,50 @@ A multi-agent RAG application that evaluates user actions against enterprise pol
 
 ```mermaid
 flowchart TD
-    Q[User question] --> S[Supervisor / Router Agent]
+    Q[User question] --> SUP[Supervisor Agent<br/>Gemini routing LLM]
 
-    S -->|Security relevant| SEC[Security Agent]
-    S -->|HR relevant| HR[HR Agent]
-    S -->|Finance relevant| FIN[Finance Agent]
-    S -->|IT relevant| IT[IT Agent]
+    subgraph DOMAIN[Domain agents selected by the Supervisor]
+        direction TB
 
-    SEC --> RET[FAISS Semantic Retrieval Tool]
-    HR --> RET
-    FIN --> RET
-    IT --> RET
+        subgraph HRLANE[HR domain]
+            HR[HR Agent] --> HRRAG[HR FAISS retrieval<br/>domain = hr]
+            HRRAG --> HRLLM[HR Gemini LLM]
+            HRLLM --> HRF[HR finding and evidence]
+        end
 
-    RET --> SEC
-    RET --> HR
-    RET --> FIN
-    RET --> IT
+        subgraph FINLANE[Finance domain]
+            FIN[Finance Agent] --> FINRAG[Finance FAISS retrieval<br/>domain = finance]
+            FINRAG --> FINLLM[Finance Gemini LLM]
+            FINLLM --> FINF[Finance finding and evidence]
+        end
 
-    SEC --> MERGE[Evidence Merge Node]
-    HR --> MERGE
-    FIN --> MERGE
-    IT --> MERGE
+        subgraph SECLANE[Security domain]
+            SEC[Security Agent] --> SECRAG[Security FAISS retrieval<br/>domain = security]
+            SECRAG --> SECLLM[Security Gemini LLM]
+            SECLLM --> SECF[Security finding and evidence]
+        end
 
-    MERGE --> COMP[Compliance Evaluation Agent]
+        subgraph ITLANE[IT domain]
+            IT[IT Agent] --> ITRAG[IT FAISS retrieval<br/>domain = it]
+            ITRAG --> ITLLM[IT Gemini LLM]
+            ITLLM --> ITF[IT finding and evidence]
+        end
+    end
+
+    SUP -->|routes to relevant domains| HR
+    SUP -->|routes to relevant domains| FIN
+    SUP -->|routes to relevant domains| SEC
+    SUP -->|routes to relevant domains| IT
+
+    HRF --> MERGE[Merge findings and evidence]
+    FINF --> MERGE
+    SECF --> MERGE
+    ITF --> MERGE
+
+    MERGE --> COMP[Compliance Evaluation Agent<br/>Gemini structured decision]
     COMP --> CITE[Citation Formatter Agent]
-    CITE --> PDF[PDF Evidence Highlighting Tool]
-    PDF --> RESP[Response Formatter Node]
+    CITE --> PDF[PDF highlighting tool<br/>exact evidence matching]
+    PDF --> RESP[Response Formatter]
     RESP --> OUT[Validated JSON and Streamlit UI]
 ```
 
