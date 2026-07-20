@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer
 
 VECTOR_STORE_DIR = Path("data/vector_store")
 MAX_RESULTS = 2
-MIN_SEMANTIC_SCORE = 0.5
+MIN_SEMANTIC_SCORE = 0.4
 
 
 @lru_cache
